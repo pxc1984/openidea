@@ -6,6 +6,7 @@
  * Line-based regex detection (cheap, no parser), plus the run configuration for
  * one target derived from the project's detected test configurations.
  */
+import { isRiscvPath, riscvFunctions, riscvCode } from "@/platform/riscv";
 import { goTargets } from "./goTargets";
 import { csharpTargets } from "./csharpTargets";
 import { formatArgs } from "./configs";
@@ -23,6 +24,8 @@ export type TargetKind = "main" | "test" | "suite" | "generate";
 export interface RunTarget {
   /** 0-based line of the declaration. */
   line: number;
+  /** Optional source range for assembly functions without braces. */
+  endLine?: number;
   kind: TargetKind;
   /** Display name (`adds_numbers`, `math > adds`). */
   name: string;
@@ -44,9 +47,10 @@ export interface RunTarget {
 /** Above this size we skip detection (generated / minified files). */
 export const MAX_SCAN = 400_000;
 
-type Lang = "rust" | "js" | "python" | "php" | "go" | "jvm" | "ruby" | "csharp" | null;
+type Lang = "riscv" | "rust" | "js" | "python" | "php" | "go" | "jvm" | "ruby" | "csharp" | null;
 
 export function targetLanguage(relPath: string): Lang {
+  if (isRiscvPath(relPath)) return "riscv";
   if (/\.cs$/i.test(relPath)) return "csharp";
   if (/\.rs$/.test(relPath)) return "rust";
   if (/\.[cm]?[jt]sx?$/.test(relPath)) return "js";
@@ -357,6 +361,20 @@ export function detectRunTargets(text: string, relPath: string, django = false):
   if (text.length > MAX_SCAN) return [];
   const lines = text.split("\n");
   switch (targetLanguage(relPath)) {
+    case "riscv": {
+      const functions = riscvFunctions(text);
+      const code = riscvCode(text).split("\n");
+      return functions.map((f, i) => {
+        let endLine = (functions[i + 1]?.line ?? code.length) - 1;
+        for (let line = f.line + 1; line <= endLine; line++) {
+          if (/^\s*\.(?:data|bss|rodata|section)\b/.test(code[line]!)) {
+            endLine = line - 1;
+            break;
+          }
+        }
+        return { line: f.line, endLine, kind: "main", name: f.name, path: [f.name] };
+      });
+    }
     case "csharp":
       return csharpTargets(text);
     case "rust":

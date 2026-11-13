@@ -4,6 +4,7 @@ import type { RunConfig } from "@/platform/ipc";
 import { useRunConfigTypes } from "@/workbench/contributions";
 
 const KIND_LABELS: Record<string, string> = {
+  riscv: "RISC-V Assembly",
   npm: "npm",
   deno: "Deno",
   bun: "Bun",

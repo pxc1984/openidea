@@ -444,6 +444,7 @@ describe("running service count (the Services badge)", () => {
 describe("add service categories", () => {
   it("categorizes every built-in kind; update the table when adding kinds", () => {
     const expected: Record<string, string> = {
+      riscv: "Others",
       npm: "JavaScript",
       node: "JavaScript",
       bun: "JavaScript",

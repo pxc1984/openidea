@@ -1,0 +1,8 @@
+id = "riscv"
+name = "RISC-V Assembly"
+extensions = ["asm", "s"]
+line-comment = "#"
+block-comment = ["/*", "*/"]
+indent = { tab-size = 8, insert-spaces = false }
+ui-mode = "RISC-V Assembly"
+scratch-template = "        .text\n        .globl sum\n# int64_t sum(int64_t a, int64_t b)\nsum:    add a0, a0, a1\n        ret\n$END$"

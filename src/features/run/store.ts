@@ -32,6 +32,7 @@ import { useProject } from "@/platform/project";
 import { executeAction } from "@/platform/actions";
 import { workflowSettings } from "@/platform/workflowSettings";
 import { maybeEditorService, notifications, toolWindowService, useDebugRunSessions } from "@/workbench/contributions";
+import { prepareRiscv } from "./riscv";
 import { applyBuildPolicyToCommand } from "./buildCommand";
 import { ConsoleModel } from "./console";
 import { jvmFrameTarget } from "./links";
@@ -746,6 +747,11 @@ export async function startRun(
     beforeStop?: (runId: RunId) => Promise<void>;
   } = {},
 ): Promise<RunSession | null> {
+  if (config.kind === "riscv" && !options.launch) {
+    const prepared = await prepareRiscv(config);
+    if (!prepared) return null;
+    config = prepared;
+  }
   config = withRunTarget(config);
   if (!options.launch && isCMakeBuild(config)) {
     await buildCMake(config.id, options.show !== false);

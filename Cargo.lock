@@ -4750,6 +4750,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ide-riscv"
+version = "0.1.44"
+
+[[package]]
 name = "ide-run"
 version = "0.1.44"
 dependencies = [
@@ -4758,6 +4762,7 @@ dependencies = [
  "ide-build",
  "ide-core",
  "ide-language",
+ "ide-riscv",
  "libc",
  "parking_lot",
  "portable-pty",

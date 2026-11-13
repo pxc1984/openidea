@@ -32,6 +32,7 @@ import { firstTopLevelType, scanJvmTargets, simpleClassName } from "./jvmTargets
 import { isWindows } from "./jvmTypes";
 import { inheritedRunTargets } from "./inheritedMain";
 import { detectRunTargets, targetConfig, targetLanguage, type RunTarget } from "./targets";
+import { riscvConfig, isRiscvPath } from "./riscv";
 import { tx } from "@/platform/i18n";
 
 export interface LocatedTool {
@@ -200,6 +201,7 @@ export function goTestNamed(
 // Languages
 
 export type ScriptLanguage =
+  | "riscv"
   | "js"
   | "ts"
   | "python"
@@ -239,6 +241,7 @@ const interpreterName = (cmd: string) => baseName(cmd).replace(/\.exe$/, "");
 
 export function scriptLanguage(path: string, content?: string): ScriptLanguage | null {
   const name = baseName(path);
+  if (isRiscvPath(path)) return "riscv";
   if (/\.[cm]?js$/.test(name)) return "js";
   if (/\.[cm]?ts$/.test(name) && !/\.d\.[cm]?ts$/.test(name)) return "ts";
   if (/\.pyw?$/.test(name)) return "python";
@@ -267,6 +270,8 @@ export function scriptLanguage(path: string, content?: string): ScriptLanguage |
 /** Tools a file of `lang` may run with, in preference order. */
 export function toolsFor(lang: ScriptLanguage, content?: string): string[] {
   switch (lang) {
+    case "riscv":
+      return [];
     case "js":
       return ["node", "deno", "bun"];
     case "ts":
@@ -800,6 +805,10 @@ export function produceFile(input: ContextInput, env: ToolEnv): Produced | null 
   if (!lang) return null;
 
   switch (lang) {
+    case "riscv": {
+      const config = riscvConfig(input.path, input.content ?? "", input.root);
+      return { name: config.name, scope: "file", config };
+    }
     case "js":
     case "ts":
       return jsRuntime(lang, env, s);
@@ -944,6 +953,7 @@ export function produceFile(input: ContextInput, env: ToolEnv): Produced | null 
 /** Last line (0-based, inclusive) of the declaration starting at `target.line`. */
 export function targetEnd(lines: readonly string[], target: RunTarget, python: boolean): number {
   const start = target.line;
+  if (target.endLine !== undefined) return target.endLine;
   if (python) {
     const indent = /^\s*/.exec(lines[start] ?? "")![0].length;
     let end = start;
@@ -1034,6 +1044,15 @@ export function fileTargets(
 function elementProduction(input: ContextInput, env: ToolEnv, target: RunTarget): Produced | null {
   const s = site(input);
   const rel = s.idPath;
+  if (isRiscvPath(input.path)) {
+    const config = riscvConfig(
+      input.path,
+      input.content ?? "",
+      input.root,
+      /^(main|_start)$/.test(target.name) ? undefined : target.name,
+    );
+    return { name: config.name, scope: "element", config };
+  }
   if (target.kind === "generate") {
     const config = goGenerateConfig(input.path, "file", input.content?.split("\n")[target.line]);
     return config ? { name: config.name, scope: "element", config } : null;

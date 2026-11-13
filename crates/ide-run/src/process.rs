@@ -143,6 +143,15 @@ fn quote(s: &str) -> String {
 }
 
 pub(crate) fn invocation(config: &RunConfig, cwd: &Path) -> Invocation {
+    if config.kind == "riscv" && config.command == "openidea-riscv" {
+        return Invocation {
+            program: std::env::current_exe().expect("running IDE executable"),
+            args: std::iter::once("--riscv-run".to_owned()).chain(config.args.clone()).collect(),
+            raw_args: false,
+            shell: false,
+            display: format!("RISC-V {}", config.args.iter().map(|a| quote(a)).collect::<Vec<_>>().join(" ")),
+        };
+    }
     let windows = cfg!(windows);
     let command = config.command.trim();
     let looks_like_shell = command.contains(char::is_whitespace) || command.contains(SHELL_CHARS);

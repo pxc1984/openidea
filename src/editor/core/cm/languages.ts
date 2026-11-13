@@ -77,6 +77,11 @@ const supports = new Map<string, Promise<LanguageSupport | null>>();
 /** Frontend modes that extend or replace the bundled parsers. */
 const OWN_MODES = [
   LanguageDescription.of({
+    name: "RISC-V Assembly",
+    extensions: ["asm", "s", "S"],
+    load: async () => new LanguageSupport((await import("./riscv")).riscvLanguage),
+  }),
+  LanguageDescription.of({
     name: "CMake",
     extensions: ["cmake", "cmake.in"],
     filename: /^(?:CMakeLists\.txt|.*\.cmake(?:\.in)?)$/,

@@ -27,6 +27,7 @@ import { goBuildType, goTestType } from "./goTypes";
 import { dotnetProjectType, dotnetTestType } from "./dotnetTypes";
 import { rakeType, rspecType, rubyScriptType } from "./rubyTypes";
 import { djangoTestType } from "./djangoTypes";
+import { riscvType } from "./riscv";
 import { phpunitType } from "./phpunitTypes";
 
 export const COMPOUND = "compound";
@@ -477,6 +478,7 @@ const pytest: RunConfigTypeContribution = {
 export const BUILTIN_TYPES: readonly RunConfigTypeContribution[] = [
   shell,
   program,
+  riscvType,
   npm,
   bun,
   gradle,

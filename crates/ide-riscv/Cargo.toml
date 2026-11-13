@@ -1,0 +1,10 @@
+[package]
+name = "ide-riscv"
+description = "Built-in RV64 educational assembler and source simulator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "openidea-riscv"
+path = "src/main.rs"

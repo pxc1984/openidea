@@ -11,7 +11,12 @@ import { confirmChecked } from "@/workbench/messages";
 import styles from "./Run.module.css";
 import { tx } from "@/platform/i18n";
 
-interface Pending {
+interface PromptOptions {
+  initial?: string;
+  message?: string;
+  validate?: (value: string) => string | null;
+}
+interface Pending extends PromptOptions {
   title: string;
   resolve: (value: string | null) => void;
 }
@@ -55,8 +60,8 @@ export async function confirmRerun(name: string, instances = 1): Promise<boolean
 export { confirmTerminate } from "@/workbench/confirmTerminate";
 
 /** Asks for the value of `$Prompt$`; null when cancelled. */
-export function promptValue(title: string): Promise<string | null> {
-  return new Promise((resolve) => useRunDialog.setState({ pending: { title, resolve } }));
+export function promptValue(title: string, options: PromptOptions = {}): Promise<string | null> {
+  return new Promise((resolve) => useRunDialog.setState({ pending: { title, resolve, ...options } }));
 }
 
 /** Asks for the SSH password or key passphrase of a run target (`message`: the backend's error); null when cancelled. */
@@ -107,8 +112,9 @@ function SecretDialog({ message, save: initialSave, resolve }: PendingSecret) {
   );
 }
 
-function PromptDialog({ title, resolve }: { title: string; resolve: (v: string | null) => void }) {
-  const [value, setValue] = useState("");
+function PromptDialog({ title, resolve, initial = "", message, validate }: Pending) {
+  const [value, setValue] = useState(initial);
+  const error = validate?.(value);
   const done = (v: string | null) => {
     close();
     resolve(v);
@@ -120,12 +126,20 @@ function PromptDialog({ title, resolve }: { title: string; resolve: (v: string |
       onClose={() => done(null)}
       width={420}
       buttons={[
-        { label: "OK", role: "default", onClick: () => done(value) },
+        { label: "OK", role: "default", disabled: !!error, onClick: () => done(value) },
         { label: "Cancel", role: "cancel" },
       ]}
     >
       <div className={styles.dialogBody}>
-        <Input autoFocus aria-label="Value" value={value} onChange={(e) => setValue(e.target.value)} />
+        {message && <span>{message}</span>}
+        <Input
+          autoFocus
+          aria-label="Value"
+          value={value}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        {error && <span role="alert">{error}</span>}
       </div>
     </Dialog>
   );
@@ -136,7 +150,7 @@ export function RunDialogsOverlay() {
   const secret = useRunDialog((s) => s.secret);
   return (
     <>
-      {pending && <PromptDialog title={pending.title} resolve={pending.resolve} />}
+      {pending && <PromptDialog {...pending} />}
       {secret && <SecretDialog {...secret} />}
     </>
   );

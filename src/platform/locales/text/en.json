@@ -1534,5 +1534,17 @@
   "Implements {names}": "Implements {names}",
   "Choose Implemented Interface of {name} ({count} found)": "Choose Implemented Interface of {name} ({count} found)",
   "Search tasks": "Search tasks",
-  "No matching tasks": "No matching tasks"
+  "No matching tasks": "No matching tasks",
+  "RISC-V Assembly": "RISC-V Assembly",
+  "Run an RV64 assembly program or an individual function": "Run an RV64 assembly program or an individual function",
+  "Assembly file": "Assembly file",
+  "Function label": "Function label",
+  "Automatic entry point": "Automatic entry point",
+  "Integer arguments": "Integer arguments",
+  "Ask for function arguments before running": "Ask for function arguments before running",
+  "Instruction limit": "Instruction limit",
+  "Enter a positive integer": "Enter a positive integer",
+  "Arguments for '{name}'": "Arguments for '{name}'",
+  "Integer arguments are passed in a0–a7, then on the stack.": "Integer arguments are passed in a0–a7, then on the stack.",
+  "Enter the required number of 64-bit integer arguments (decimal, hexadecimal, binary, or octal).": "Enter the required number of 64-bit integer arguments (decimal, hexadecimal, binary, or octal)."
 }

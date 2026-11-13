@@ -337,3 +337,9 @@ mod linkage_tests {
         );
     }
 }
+
+/// Internal child-process entry point, shared by the desktop and the remote host.
+pub fn run_riscv_helper() -> Option<i32> {
+    let mut args = std::env::args().skip(1);
+    (args.next().as_deref() == Some("--riscv-run")).then(|| ide_riscv::cli(args.collect()))
+}

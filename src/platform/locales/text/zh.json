@@ -7930,5 +7930,17 @@
   "Implements {names}": "实现 {names}",
   "Choose Implemented Interface of {name} ({count} found)": "选择 {name} 实现的接口（找到 {count} 个）",
   "Search tasks": "搜索任务",
-  "No matching tasks": "没有匹配的任务"
+  "No matching tasks": "没有匹配的任务",
+  "RISC-V Assembly": "RISC-V 汇编",
+  "Run an RV64 assembly program or an individual function": "运行 RV64 汇编程序或单个函数",
+  "Assembly file": "汇编文件",
+  "Function label": "函数标签",
+  "Automatic entry point": "自动选择入口点",
+  "Integer arguments": "整数参数",
+  "Ask for function arguments before running": "运行前询问函数参数",
+  "Instruction limit": "指令执行次数上限",
+  "Enter a positive integer": "请输入正整数",
+  "Arguments for '{name}'": "“{name}”的参数",
+  "Integer arguments are passed in a0–a7, then on the stack.": "整数参数通过 a0–a7 寄存器传递，其余参数通过栈传递。",
+  "Enter the required number of 64-bit integer arguments (decimal, hexadecimal, binary, or octal).": "请输入所需数量的 64 位整数参数（十进制、十六进制、二进制或八进制）。"
 }

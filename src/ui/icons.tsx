@@ -1126,7 +1126,7 @@ const EXT_ICONS = table({
   "file-http": "http rest",
   "file-regexp": "regexp",
   "file-idl": "idl",
-  "file-binary": "class bin dat so dylib dll o a wasm pyc",
+  "file-binary": "class bin dat so dylib dll o a wasm pyc asm s",
 });
 
 /** Source files for languages without a file-type icon. */

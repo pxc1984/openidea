@@ -10,6 +10,9 @@ use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
 fn main() {
+    if let Some(code) = ide_run::run_riscv_helper() {
+        std::process::exit(code);
+    }
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "--version") {
         println!("openidea-server {} (protocol {})", env!("CARGO_PKG_VERSION"), rpc::PROTOCOL_VERSION);

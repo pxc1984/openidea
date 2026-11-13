@@ -73,6 +73,7 @@ const BUILTIN: &[(&str, &str)] = &[
     ("python", include_str!("../../../languages/python.toml")),
     ("r", include_str!("../../../languages/r.toml")),
     ("restructuredtext", include_str!("../../../languages/restructuredtext.toml")),
+    ("riscv", include_str!("../../../languages/riscv.toml")),
     ("ruby", include_str!("../../../languages/ruby.toml")),
     ("rust", include_str!("../../../languages/rust.toml")),
     ("sass", include_str!("../../../languages/sass.toml")),
@@ -474,6 +475,7 @@ mod tests {
     /// `name`s exported by `@codemirror/language-data` or built into `src/editor/core/cm/languages.ts`
     /// (the UI resolves `ui-mode` against these).
     const UI_MODES: &[&str] = &[
+        "RISC-V Assembly",
         "AsciiDoc",
         "Batch",
         "C",

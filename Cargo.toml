@@ -26,6 +26,7 @@ ide-dap = { path = "crates/ide-dap" }
 ide-vcs = { path = "crates/ide-vcs" }
 ide-terminal = { path = "crates/ide-terminal" }
 ide-run = { path = "crates/ide-run" }
+ide-riscv = { path = "crates/ide-riscv" }
 ide-workspace = { path = "crates/ide-workspace" }
 ide-sdk = { path = "crates/ide-sdk" }
 ide-build = { path = "crates/ide-build" }
