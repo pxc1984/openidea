@@ -6,13 +6,14 @@
 import { EditorState, Prec, StateEffect, StateField, Transaction, type Extension } from "@codemirror/state";
 import { EditorView, ViewPlugin, runScopeHandlers } from "@codemirror/view";
 import { Vim, getCM, vim } from "@replit/codemirror-vim";
-import { transientChange, reportInputMode, type EditorDocContext } from "@/editor/api";
+import { adjacentEditor, transientChange, reportInputMode, type EditorDocContext } from "@/editor/api";
 import { setContext } from "@/platform/context";
 import { executeAction, getAction } from "@/platform/actions";
 import { showStatusInfo } from "@/workbench/contributions";
 import { VIM_EDITOR_ATTR } from "./conflicts";
 import { useVimMode, type VimModeState } from "./mode";
-import { resolveActionId, type RcCommand } from "./rc";
+import { installClipboardRegisters } from "./clipboard";
+import { resolveActionId, type RcCommand, type SetOp } from "./rc";
 import { mapFunctionTextObjects } from "./textObjects";
 
 /** Insert/Replace state as seen by transactions (mode changes are queued). */
@@ -238,6 +239,30 @@ const escapeClosesPopupsFirst = EditorView.domEventHandlers({
   },
 });
 
+const LINE_MOTIONS: Record<string, 1 | -1> = { j: 1, ArrowDown: 1, k: -1, ArrowUp: -1 };
+
+/** Normal-mode `j`/`k` on the last/first line continue into the host's neighbouring editor (notebook cells). */
+const lineMotionLeavesEditor = EditorView.domEventHandlers({
+  keydown(e, view) {
+    const direction = LINE_MOTIONS[e.key];
+    const leave = view.state.facet(adjacentEditor);
+    if (!direction || !leave || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return false;
+    const vimState = getCM(view)?.state.vim;
+    if (!vimState || vimState.insertMode || vimState.visualMode) return false;
+    // A count, operator or register applies to this editor only (`3j`, `dj`).
+    const input = vimState.inputState;
+    if (input.operator || input.keyBuffer.length || input.prefixRepeat.length || input.motionRepeat.length)
+      return false;
+    if (input.registerName) return false;
+    const { doc, selection } = view.state;
+    const line = doc.lineAt(selection.main.head);
+    if (direction > 0 ? line.number < doc.lines : line.number > 1) return false;
+    if (!leave(direction, selection.main.head - line.from)) return false;
+    e.preventDefault();
+    return true;
+  },
+});
+
 const modeTracker = (ctx?: EditorDocContext) =>
   ViewPlugin.define((view) => {
     const cm = getCM(view);
@@ -299,6 +324,7 @@ const vimTheme = EditorView.theme({
 /** Vim for one editor. Highest precedence: Vim sees keys before the editor's keymaps. */
 export function vimExtension(ctx?: EditorDocContext): Extension {
   defineExCommands();
+  installClipboardRegisters();
   return [
     Prec.highest([
       vimInsert,
@@ -308,6 +334,7 @@ export function vimExtension(ctx?: EditorDocContext): Extension {
       imeTracker,
       imeTransactions,
       escapeClosesPopupsFirst,
+      lineMotionLeavesEditor,
       vim(),
       modeTracker(ctx),
     ]),
@@ -412,9 +439,33 @@ function firstKey(lhs: string): string {
   return /^<[^<>]+>|^./.exec(lhs)?.[0] ?? lhs;
 }
 
+/** Vim's `:set name+=value` and friends: numbers add, subtract or multiply; other options are comma lists. */
+function adjustedOption(name: string, op: SetOp, value: string | boolean): string | number | Error {
+  const current = Vim.getOption(name);
+  if (current instanceof Error) return current;
+  if (typeof current === "boolean" || typeof value === "boolean")
+    return new Error(`invalid argument: ${name}${op}${value}`);
+  if (typeof current === "number" || NUMBER_OPTIONS.has(name)) {
+    const [a, b] = [Number(current), Number(value)];
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return new Error(`number required: ${name}${op}${value}`);
+    return op === "+=" ? a + b : op === "-=" ? a - b : a * b;
+  }
+  const list = (text: string) => text.split(",").filter(Boolean);
+  const items = list(String(current));
+  const given = list(value);
+  if (op === "-=") return items.filter((item) => !given.includes(item)).join(",");
+  const added = given.filter((item) => !items.includes(item));
+  return (op === "+=" ? [...items, ...added] : [...added, ...items]).join(",");
+}
+
+const NUMBER_OPTIONS = new Set(["textwidth", "tw", "insertModeEscKeysTimeout"]);
+
 /** Applies rc commands (replacing earlier rc mappings). Returns problems to report. */
 export function applyRcCommands(commands: readonly RcCommand[]): string[] {
   defineExCommands();
+  installClipboardRegisters();
+  // Not a codemirror-vim option, so nothing else resets it when the rc file drops the line.
+  Vim.setOption("clipboard", "");
   Vim.mapclear();
   shadowLeaderBuiltins(commands);
   // `mapclear` drops them with the user mappings; before those, which may remap them.
@@ -423,7 +474,8 @@ export function applyRcCommands(commands: readonly RcCommand[]): string[] {
   for (const c of commands) {
     try {
       if (c.kind === "set") {
-        const err = Vim.setOption(c.name, c.value);
+        const value = c.op ? adjustedOption(c.name, c.op, c.value) : c.value;
+        const err = value instanceof Error ? value : Vim.setOption(c.name, value);
         if (err) problems.push(`set ${c.name}: ${err.message}`);
       } else if (c.kind === "map") {
         if (c.noremap) Vim.noremap(c.lhs, c.rhs, c.mode as string);
