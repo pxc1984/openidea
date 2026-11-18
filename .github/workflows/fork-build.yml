@@ -1,0 +1,55 @@
+name: Fork build
+
+# Builds the fork's desktop app for Linux x64 and uploads the RPM to a
+# prerelease tagged `fork-<version>` (updated in place by later runs).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref to build (default: main)"
+        required: false
+        default: "main"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref || 'main' }}
+      - uses: pnpm/action-setup@v5
+        with: { version: 11 }
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: pnpm }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-unknown-linux-gnu }
+      - uses: Swatinem/rust-cache@v2
+        with: { key: fork-x86_64-unknown-linux-gnu, cache-on-failure: true }
+      - name: Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: |
+          pnpm exec tauri build --target x86_64-unknown-linux-gnu
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(jq -r .version src-tauri/tauri.conf.json)"
+          tag="fork-$version"
+          rpm="$(ls target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.x86_64.rpm)"
+          echo "Uploading $rpm to release $tag"
+          gh release view "$tag" >/dev/null 2>&1 \
+            || gh release create "$tag" --prerelease --title "OpenIDEA $version (fork)" \
+                 --body "My build of the fork's main: Linux x64 RPM."
+          gh release upload "$tag" "$rpm" --clobber
